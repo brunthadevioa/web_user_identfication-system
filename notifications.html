@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | Identity System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-layout fade-up">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h2>IdentityOS</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="profile.html" class="nav-item"><i class="fa-regular fa-user"></i> My Profile</a></li>
+                <li><a href="devices.html" class="nav-item"><i class="fa-solid fa-laptop"></i> Trusted Devices</a></li>
+                <li><a href="notifications.html" class="nav-item active"><i class="fa-regular fa-bell"></i> Notifications</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="window.location.href='login.html'">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="header-text">
+                    <h2>Inbox</h2>
+                    <p>Alerts, security warnings, and system messages.</p>
+                </div>
+            </div>
+
+            <div class="notifications-list" id="notificationsList">
+                <p style="text-align: center; color: var(--text-secondary);">Loading inbox...</p>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = JSON.parse(userJson);
+            const userId = user.id;
+
+            const listContainer = document.getElementById('notificationsList');
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/notifications?user_id=${userId}`);
+                const notifications = await response.json();
+
+                listContainer.innerHTML = '';
+
+                if (notifications.length === 0) {
+                    listContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Your inbox is currently empty.</p>';
+                    return;
+                }
+
+                notifications.forEach(noti => {
+                    const iconClass = noti.type === 'success' ? 'fa-circle-check' : noti.type === 'warning' ? 'fa-shield-halved' : 'fa-circle-info';
+                    const colorStyle = noti.type === 'success' ? 'style="color:#10b981"' : noti.type === 'warning' ? 'style="color:#f59e0b"' : '';
+                    const item = document.createElement('div');
+                    item.className = `notification-item ${noti.is_read ? '' : 'unread'}`;
+                    
+                    item.innerHTML = `
+                        <div class="noti-icon ${noti.type}">
+                            <i class="fa-solid ${iconClass}" ${colorStyle}></i>
+                        </div>
+                        <div class="noti-content">
+                            <h4>${noti.title}</h4>
+                            <p>${noti.message}</p>
+                            <div style="display:flex; justify-content:space-between; margin-top:8px;">
+                                <small style="color: var(--text-secondary); font-size: 11px;">
+                                    <i class="fa-regular fa-calendar"></i> ${new Date(noti.created_at).toLocaleDateString()}
+                                </small>
+                                <small style="color: var(--text-secondary); font-size: 11px;">
+                                    <i class="fa-regular fa-clock"></i> ${new Date(noti.created_at).toLocaleTimeString()}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+
+            } catch (err) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #ef4444;">Failed to load notifications.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

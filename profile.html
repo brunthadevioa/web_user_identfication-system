@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Identity System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-layout fade-up">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h2>IdentityOS</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="profile.html" class="nav-item active"><i class="fa-regular fa-user"></i> My Profile</a></li>
+                <li><a href="devices.html" class="nav-item"><i class="fa-solid fa-laptop"></i> Trusted Devices</a></li>
+                <li><a href="notifications.html" class="nav-item"><i class="fa-regular fa-bell"></i> Notifications</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="window.location.href='login.html'">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="header-text">
+                    <h2>Extended Profile</h2>
+                    <p>Manage your personal information.</p>
+                </div>
+            </div>
+
+            <div class="profile-grid">
+                <div class="data-card">
+                    <h3>Contact Information</h3>
+                    <div class="input-row">
+                        <label>Phone Number</label>
+                        <input type="text" id="phoneInput" placeholder="Enter phone number">
+                    </div>
+                    <div class="input-row">
+                        <label>Home Address</label>
+                        <input type="text" id="addressInput" placeholder="Enter address">
+                    </div>
+                    <button class="btn-save" id="saveProfileBtn">Save Changes</button>
+                </div>
+                
+                <div class="data-card">
+                    <h3>Biography</h3>
+                    <div class="input-row">
+                        <label>Short Bio</label>
+                        <textarea rows="4" id="bioInput" placeholder="Tell us about yourself..."></textarea>
+                    </div>
+                    <div class="input-row">
+                        <label>Avatar URL</label>
+                        <input type="text" id="avatarInput" placeholder="https://example.com/image.png">
+                    </div>
+                    <button class="btn-save">Upload</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = JSON.parse(userJson);
+            const userId = user.id;
+
+            if (!userId) {
+                console.error("Critical Error: User ID not found in localStorage.");
+                alert("Session error. Please logout and log back in.");
+                return;
+            }
+
+            // Load Profile Data
+            try {
+                const response = await fetch(`http://localhost:3000/api/profile?user_Id=${userId}`);
+                if (!response.ok) throw new Error("Could not load profile from server.");
+                const profile = await response.json();
+
+                document.getElementById('phoneInput').value = profile.phone || '';
+                document.getElementById('addressInput').value = profile.address || '';
+                document.getElementById('bioInput').value = profile.bio || '';
+                document.getElementById('avatarInput').value = profile.avatar_url || '';
+            } catch (err) {
+                console.log('No profile found yet, using defaults.');
+            }
+
+            // Save Changes Logic
+            const saveBtn = document.getElementById('saveProfileBtn');
+            saveBtn.addEventListener('click', async () => {
+                const phone = document.getElementById('phoneInput').value;
+                const address = document.getElementById('addressInput').value;
+                const bio = document.getElementById('bioInput').value;
+                const avatar_url = document.getElementById('avatarInput').value;
+
+                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+
+                try {
+                    const response = await fetch('http://localhost:3000/api/profile/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, phone, address, bio, avatar_url })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert('Success! Profile stored in database.');
+                    } else {
+                        throw new Error(result.error || 'Server rejected the update');
+                    }
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                } finally {
+                    saveBtn.innerHTML = 'Save Changes';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

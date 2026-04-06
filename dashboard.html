@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Identity System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-layout fade-up">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h2>IdentityOS</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="profile.html" class="nav-item"><i class="fa-regular fa-user"></i> My Profile</a></li>
+                <li><a href="devices.html" class="nav-item"><i class="fa-solid fa-laptop"></i> Trusted Devices</a></li>
+                <li><a href="notifications.html" class="nav-item"><i class="fa-regular fa-bell"></i> Notifications</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn-logout" id="logoutBtn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="header-text">
+                    <h2>Welcome back!</h2>
+                    <p>Here is your recent authentication activity.</p>
+                </div>
+                <div class="user-badge">
+                    <div class="avatar-small">A</div>
+                    <span id="userGreeting">Admin User</span>
+                </div>
+            </div>
+
+            <!-- Login History Table -->
+            <div class="table-wrapper">
+                <table class="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Date & Time</th>
+                            <th>IP Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center;">Loading history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = JSON.parse(userJson);
+            document.getElementById('userGreeting').innerHTML = user.fullname;
+            
+            const tableBody = document.getElementById('historyTableBody');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/history?user_id=' + user.id);
+                const history = await response.json();
+                
+                tableBody.innerHTML = '';
+                
+                if (history.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No history found.</td></tr>';
+                }
+
+                history.forEach(log => {
+                    const tr = document.createElement('tr');
+                    const dateStr = new Date(log.login_time).toLocaleString();
+                    const statusClass = log.status === 'Success' ? 'success' : 'error';
+                    
+                    tr.innerHTML = `
+                        <td><span class="mono">#SESS-${log.id}</span></td>
+                        <td>${dateStr}</td>
+                        <td><span class="mono">${log.ip_address}</span></td>
+                        <td><span class="status-badge ${statusClass}">${log.status}</span></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Error loading history</td></tr>';
+            }
+
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

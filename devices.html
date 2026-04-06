@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trusted Devices | Identity System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-layout fade-up">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h2>IdentityOS</h2>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="profile.html" class="nav-item"><i class="fa-regular fa-user"></i> My Profile</a></li>
+                <li><a href="devices.html" class="nav-item active"><i class="fa-solid fa-laptop"></i> Trusted Devices</a></li>
+                <li><a href="notifications.html" class="nav-item"><i class="fa-regular fa-bell"></i> Notifications</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="window.location.href='login.html'">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="header-text">
+                    <h2>Trusted Devices</h2>
+                    <p>Manage the devices associated with your account.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="glass-table">
+                    <thead>
+                        <tr>
+                            <th>Device Name</th>
+                            <th>Browser / OS</th>
+                            <th>Last Active</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="devicesTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center;">Loading devices...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const user = JSON.parse(userJson);
+            const userId = user.id;
+
+            const tableBody = document.getElementById('devicesTableBody');
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/devices?user_id=${userId}`);
+                const devices = await response.json();
+
+                tableBody.innerHTML = '';
+
+                if (devices.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No devices found.</td></tr>';
+                    return;
+                }
+
+                devices.forEach((device, index) => {
+                    const row = document.createElement('tr');
+                    
+                    // Logic for OS icons
+                    const osIcon = device.os.toLowerCase().includes('windows') ? '<i class="fa-brands fa-windows" style="color:#00a4ef"></i>' : 
+                                   device.os.toLowerCase().includes('mac') ? '<i class="fa-brands fa-apple"></i>' : 
+                                   '<i class="fa-solid fa-mobile-screen"></i>';
+                    
+                    // Logic for Browser icons
+                    const browserIcon = device.browser.toLowerCase().includes('chrome') ? '<i class="fa-brands fa-chrome" style="color:#fbbc05"></i>' : 
+                                        device.browser.toLowerCase().includes('firefox') ? '<i class="fa-brands fa-firefox-browser" style="color:#e66000"></i>' : 
+                                        '<i class="fa-brands fa-safari" style="color:#007aff"></i>';
+
+                    row.innerHTML = `
+                        <td>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                ${osIcon}
+                                <strong>${device.device_name}</strong>
+                            </div>
+                        </td>
+                        <td>${browserIcon} ${device.browser} / ${device.os}</td>
+                        <td>${new Date(device.last_active).toLocaleString()}</td>
+                        <td>
+                            ${index === 0 ? '<span class="status-badge success">Current Session</span>' : 
+                             '<span class="status-badge warning">Trusted</span>'}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (err) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;">Error loading devices.</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html>
